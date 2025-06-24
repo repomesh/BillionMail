@@ -11,6 +11,7 @@ import (
 	"billionmail-core/internal/service/public"
 	"billionmail-core/internal/service/rbac"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
@@ -225,7 +226,7 @@ func ApplyConsoleCert(ctx context.Context) error {
 		Order("endtime desc").
 		Limit(1).Scan(crt)
 
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		//g.Log().Warning(ctx, "letsencrypts query error:", err)
 		return err
 	}
