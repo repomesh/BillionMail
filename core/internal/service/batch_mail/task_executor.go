@@ -1061,13 +1061,24 @@ func (e *TaskExecutor) processEmailContent(ctx context.Context, content string, 
 func (e *TaskExecutor) personalizeEmail(ctx context.Context, content string, task *entity.EmailTask, recipient *entity.RecipientInfo) (string, string) {
 
 	var contact entity.Contact
-	err := g.DB().Model("bm_contacts").Where("email", recipient.Recipient).Scan(&contact)
-	if err != nil {
+	// 优先按任务分组精确匹配，再按创建时间倒序获取最新一条
+	q := g.DB().Model("bm_contacts").Where("email", recipient.Recipient)
+	if task.GroupId > 0 {
+		q = q.Where("group_id", task.GroupId)
+	}
+	if err := q.OrderDesc("create_time").Limit(1).Scan(&contact); err != nil {
 		g.Log().Error(ctx, "get contact info failed: %v", err)
 	}
 
+	// If no records are found or the grouping does not match, revert to retrieving only the latest record based on the email address.
+	if contact.Id == 0 {
+		if err := g.DB().Model("bm_contacts").Where("email", recipient.Recipient).OrderDesc("create_time").Limit(1).Scan(&contact); err != nil {
+			g.Log().Error(ctx, "fallback get contact by email failed: %v", err)
+		}
+	}
+
 	var emailtask entity.EmailTask
-	err = g.DB().Model("email_tasks").Where("id", task.Id).Scan(&emailtask)
+	err := g.DB().Model("email_tasks").Where("id", task.Id).Scan(&emailtask)
 	if err != nil {
 		g.Log().Error(ctx, "get task info failed: %v", err)
 		emailtask = *task
