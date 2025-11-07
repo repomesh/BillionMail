@@ -4,7 +4,7 @@
 			<i
 				class="text-16px"
 				:class="
-					checkResult.blacklisted ? 'i-ooui:success text-primary' : 'i-ooui:clear text-error'
+					checkResult.blacklisted ? 'i-ooui:clear text-error' : 'i-ooui:success text-primary'
 				">
 			</i>
 			<span class="leading-[1]">{{ time }}</span>
